@@ -1,0 +1,45 @@
+name: Descargar documentos
+
+on:
+  # Botón manual en la pestaña Actions (con casilla opcional para pegar enlaces)
+  workflow_dispatch:
+    inputs:
+      enlaces:
+        description: "Enlaces extra (opcional, separados por espacios)"
+        required: false
+        default: ""
+  # Automático al subir cambios en la lista o en la carpeta entrada/
+  push:
+    paths:
+      - "enlaces.txt"
+      - "entrada/**"
+
+permissions:
+  contents: read   # solo lectura: no modifica el repositorio
+
+jobs:
+  descargar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Descargar documentos
+        env:
+          ENLACES_EXTRA: ${{ github.event.inputs.enlaces }}
+        run: python descargar.py
+
+      - name: Guardar descargas como ZIP
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentos-descargados
+          path: descargas/
+          retention-days: 7
+          if-no-files-found: warn
